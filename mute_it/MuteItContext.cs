@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-
 using NAudio.CoreAudioApi;
 
 namespace mute_it
@@ -13,23 +12,23 @@ namespace mute_it
         [DllImport("user32.dll")]
         public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-        public static int MUTE_CODE = 123;
-        public static int UNMUTE_CODE = 234;
+        public static readonly int MUTE_CODE = 123;
+        public static readonly int UNMUTE_CODE = 234;
 
-        private static Double REFRESH_INTERVAL = 1000;
-        private NotifyIcon tbIcon;
-        private System.Timers.Timer refreshTimer;
-        private HotkeyManager hkManager;
+        private static readonly double REFRESH_INTERVAL = 1000;
+        private readonly NotifyIcon tbIcon;
+        private readonly System.Timers.Timer refreshTimer;
+        private readonly HotkeyManager hkManager;
 
         public MuteItContext()
         {
-            tbIcon = createIcon();
-            updateMicStatus();
-            refreshTimer = startTimer();
-            hkManager = registerHotkeys();
+            tbIcon = CreateIcon();
+            UpdateMicStatus();
+            refreshTimer = StartTimer();
+            hkManager = RegisterHotkeys();
         }
 
-        private HotkeyManager registerHotkeys()
+        private HotkeyManager RegisterHotkeys()
         {
             var manager = new HotkeyManager(this);
 
@@ -39,86 +38,91 @@ namespace mute_it
             return manager;
         }
 
-        private NotifyIcon createIcon()
+        private NotifyIcon CreateIcon()
         {
-            var exitMenuItem = new MenuItem("Exit", new EventHandler(handleExit));
+            var exitMenuItem = new MenuItem("Exit", new EventHandler(HandleExit));
 
-            var icon = new NotifyIcon();
-            icon.Icon = Properties.Resources.mic_off;
-            icon.ContextMenu = new ContextMenu(new MenuItem[] {exitMenuItem});
-            icon.DoubleClick += (source, e) => toggleMicStatus();
+            var icon = new NotifyIcon
+            {
+                Icon = Properties.Resources.mic_off,
+                ContextMenu = new ContextMenu(new MenuItem[] { exitMenuItem })
+            };
+            icon.DoubleClick += (source, e) => ToggleMicStatus();
 
             icon.Visible = true;
 
             return icon;
         }
 
-        private System.Timers.Timer startTimer()
+        private System.Timers.Timer StartTimer()
         {
             var timer = new System.Timers.Timer(REFRESH_INTERVAL);
-            timer.Elapsed += (source, e) => updateMicStatus();
+            timer.Elapsed += (source, e) => UpdateMicStatus();
             timer.Start();
             return timer;
         }
 
-        public void setMicMuteStatus(bool doMute)
+        public void MuteMic()
         {
-            var device = getPrimaryMicDevice();
+            SetMicMuteStatus(true);
+        }
+
+        public void UnmuteMic()
+        {
+            SetMicMuteStatus(false);
+        }
+
+        private void SetMicMuteStatus(bool doMute)
+        {
+            var device = GetPrimaryMicDevice();
 
             if (device != null)
             {
                 device.AudioEndpointVolume.Mute = doMute;
-                updateMicStatus(device);
+                UpdateMicStatus(device);
             }
             else
             {
-                updateMicStatus(null);
+                UpdateMicStatus(null);
             }
         }
 
-        public void muteMic()
+        private void ToggleMicStatus()
         {
-            setMicMuteStatus(true);
-        }
-
-        public void unmuteMic()
-        {
-            setMicMuteStatus(false);
-        }
-
-        private void toggleMicStatus()
-        {
-            var device = getPrimaryMicDevice();
+            var device = GetPrimaryMicDevice();
 
             if (device != null)
             {
                 device.AudioEndpointVolume.Mute = !device.AudioEndpointVolume.Mute;
-                updateMicStatus(device);
+                UpdateMicStatus(device);
             }
             else
             {
-                updateMicStatus(null);
+                UpdateMicStatus(null);
             }
         }
 
-        private void updateMicStatus()
+        private void UpdateMicStatus()
         {
-            var device = getPrimaryMicDevice();
-            updateMicStatus(device);
-            //System.GC.Collect();
+            var device = GetPrimaryMicDevice();
+            UpdateMicStatus(device);
         }
 
-        private void updateMicStatus(MMDevice device)
+        private void UpdateMicStatus(MMDevice device)
         {
-            if (device == null || device.AudioEndpointVolume.Mute == true)
+            if (device == null || device.AudioEndpointVolume.Mute)
+            {
                 tbIcon.Icon = Properties.Resources.mic_off;
+            }
             else
+            {
                 tbIcon.Icon = Properties.Resources.mic_on;
+            }
 
-            disposeDevice(device);
+            DisposeDevice(device);
         }
 
-        private MMDevice getPrimaryMicDevice()
+        private MMDevice GetPrimaryMicDevice()
         {
             var enumerator = new MMDeviceEnumerator();
             var result = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
@@ -129,7 +133,7 @@ namespace mute_it
             return result;
         }
 
-        private void disposeDevice(MMDevice device)
+        private void DisposeDevice(MMDevice device)
         {
             if (device != null)
             {
@@ -138,7 +142,7 @@ namespace mute_it
             }
         }
 
-        private void handleExit(object sender, EventArgs e)
+        private void HandleExit(object sender, EventArgs e)
         {
             tbIcon.Visible = false;
             refreshTimer.Stop();

@@ -16,7 +16,7 @@ namespace mute_it
 
     class HotkeyManager : NativeWindow, IDisposable
     {
-        private MuteItContext context;  
+        private readonly MuteItContext context;  
 
         public HotkeyManager(MuteItContext context)
         {
@@ -30,12 +30,12 @@ namespace mute_it
             {
                 if (m.WParam.ToInt32() == MuteItContext.MUTE_CODE)
                 {
-                    context.muteMic();
+                    context.MuteMic();
                 }
 
                 if (m.WParam.ToInt32() == MuteItContext.UNMUTE_CODE)
                 {
-                    context.unmuteMic();
+                    context.UnmuteMic();
                 }
             }
             base.WndProc(ref m);
